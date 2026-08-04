@@ -1,0 +1,43 @@
+{
+  "$schema": "https://framework.cloudbase.net/framework-schema.json",
+  "envId": "{{CLOUDBASE_ENV_ID}}",
+  "version": "2.0",
+  "framework": {
+    "name": "resumeai-pro",
+    "plugins": {
+      "frontend": {
+        "use": "@cloudbase/website",
+        "inputs": {
+          "src": "frontend/dist",
+          "cloudPath": "/",
+          "index": "index.html",
+          "error": {
+            "404": "index.html"
+          }
+        }
+      },
+      "api": {
+        "use": "@cloudbase/function",
+        "inputs": {
+          "name": "resumeai-api",
+          "source": "cloudbase/dist",
+          "handler": "index.main",
+          "runtime": "Nodejs18.15",
+          "timeout": 60,
+          "installDependency": false,
+          "memory": 512
+        }
+      }
+    }
+  },
+  "_deploy_notes": {
+    "step1_envId": "替换 {{CLOUDBASE_ENV_ID}} 为你的云开发环境 ID（控制台 → 环境 → 环境ID）",
+    "step2_build": "1) cd frontend && npm install && npm run build  → 产出 frontend/dist；2) cd cloudbase && npm install && npm run build  → 产出 cloudbase/dist/index.js",
+    "step3_deploy": "项目根目录执行：cloudbase framework deploy",
+    "step4_http_route": "在云开发控制台「云函数 HTTP 访问服务」中，把路径 /api/* 绑定到 resumeai-api 函数，使前端同域名 /api/* 请求转发至云函数",
+    "timeout_rationale": "timeout=60s：DeepSeek optimize 接口可能耗时 30-60s，必须 ≥ 60s，否则会被云函数强杀",
+    "memory_rationale": "memory=512MB：pdf-parse 解析大 PDF 需要足够堆内存，默认 256MB 在大文件下可能 OOM",
+    "bundle_note": "云函数为 esbuild 单文件自包含打包（含 axios/pdf-parse），installDependency=false，云端无需装依赖；冷启动约 1-2s（11MB bundle）",
+    "free_tier_check": "免费额度：云函数 4万次/月 + 静态托管 5GB 流量/月；峰值 800 用户×6接口≈4800 次/月，远在额度内"
+  }
+}

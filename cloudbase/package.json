@@ -1,0 +1,20 @@
+{
+  "name": "resumeai-pro-cloudbase",
+  "version": "5.0.0",
+  "private": true,
+  "description": "ResumeAI Pro 云函数入口（腾讯云开发 CloudBase）",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3"
+  }
+}

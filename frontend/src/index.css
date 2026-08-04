@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* 薄荷绿设计系统 tokens（沿用 4.0 视觉风格） */
+@theme {
+  --color-mint: #5db996;
+  --color-mint-dark: #3a9e7a;
+  --color-mint-light: #e8f5f0;
+  --color-mint-bg: #f7faf9;
+  --color-ink: #1a2e2a;
+  --color-ink-muted: #6b8580;
+
+  --font-sans: "PingFang SC", "Microsoft YaHei", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-mint-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 骨架屏统一扫光动画 */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #e8f5f0 25%,
+    #f0f7f4 37%,
+    #e8f5f0 63%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* 渐变替换（骨架屏 → 实际内容） */
+.fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
