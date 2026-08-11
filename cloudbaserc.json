@@ -9,9 +9,8 @@
         "use": "@cloudbase/framework-plugin-website",
         "inputs": {
           "projectPath": "frontend",
-          "installCommand": "npm install --prefer-offline --no-audit --progress=false",
-          "buildCommand": "npm run build",
-          "outputPath": "dist",
+          "installCommand": "npm install --prefer-offline --no-audit --progress=false && npm run build",
+          "outputPath": "frontend/dist",
           "cloudPath": "/",
           "index": "index.html",
           "error": {
@@ -22,15 +21,18 @@
       "api": {
         "use": "@cloudbase/framework-plugin-function",
         "inputs": {
-          "name": "resumeai-api",
-          "projectRoot": "cloudbase",
-          "functionRoot": ".",
-          "buildCommand": "npm install --prefer-offline --no-audit --progress=false && npm run build",
-          "handler": "index.main",
-          "runtime": "Nodejs18.15",
-          "timeout": 90,
-          "installDependency": false,
-          "memory": 512
+          "functions": [
+            {
+              "name": "resumeai-api",
+              "handler": "index.main",
+              "runtime": "Nodejs18.15",
+              "timeout": 90,
+              "memorySize": 512
+            }
+          ],
+          "source": "cloudbase/dist",
+          "buildCommand": "cd cloudbase && npm install --prefer-offline --no-audit --progress=false && npm run build",
+          "installDependency": false
         }
       }
     }
