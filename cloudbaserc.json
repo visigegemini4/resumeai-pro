@@ -15,7 +15,7 @@
     "name": "resumeai-pro",
     "plugins": {
       "frontend": {
-        "use": "@cloudbase/website",
+        "use": "@cloudbase/framework-plugin-website",
         "inputs": {
           "src": "frontend/dist",
           "cloudPath": "/",
@@ -26,7 +26,7 @@
         }
       },
       "api": {
-        "use": "@cloudbase/function",
+        "use": "@cloudbase/framework-plugin-function",
         "inputs": {
           "name": "resumeai-api",
           "source": "cloudbase/dist",
