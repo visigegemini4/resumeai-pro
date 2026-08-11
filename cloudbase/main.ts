@@ -30,10 +30,18 @@ interface CloudBaseResponse {
 }
 
 export async function main(event: CloudBaseHttpEvent): Promise<CloudBaseResponse> {
-  // 规范化 path：取 /api/ 起始的片段（CloudBase 可能传入完整 URL 路径）
+  // 规范化 path：确保以 /api/ 开头
+  // CloudBase HTTP 访问服务可能去掉 /api 前缀，只传入 /verify-key
   const rawPath = event.path || "";
+  let path = rawPath;
+  // 如果已经包含 /api/，取从 /api/ 开始的部分
   const apiIdx = rawPath.indexOf("/api/");
-  const path = apiIdx >= 0 ? rawPath.slice(apiIdx) : rawPath;
+  if (apiIdx >= 0) {
+    path = rawPath.slice(apiIdx);
+  } else if (!path.startsWith("/api/")) {
+    // CloudBase 去掉了 /api 前缀，补回来
+    path = path.startsWith("/") ? "/api" + path : "/api/" + path;
+  }
 
   // 解析请求体（base64 上传的文件已在 body.base64 中，此处只解析外层 JSON）
   let body: any = {};
