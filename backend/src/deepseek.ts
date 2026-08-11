@@ -7,6 +7,7 @@ export interface DeepSeekOptions {
   temperature?: number;
   jsonMode?: boolean; // 启用 response_format json_object
   maxTokens?: number;
+  verifyTimeout?: number; // 仅 verifyKey 用：替代默认的 90 秒超时
 }
 
 /**
@@ -28,6 +29,7 @@ export async function callDeepSeek(
     temperature = 0.3,
     jsonMode = false,
     maxTokens,
+    verifyTimeout,
   } = options;
 
   // ⚠️ 禁止在此函数内记录 apiKey 到任何日志/缓存/文件
@@ -42,7 +44,7 @@ export async function callDeepSeek(
     },
     {
       headers: { Authorization: `Bearer ${apiKey}` },
-      timeout: 90000,
+      timeout: verifyTimeout ?? 90000,
     }
   );
   return response.data.choices[0].message.content as string;
@@ -86,7 +88,11 @@ export async function verifyDeepSeekKey(
   apiKey: string
 ): Promise<{ valid: boolean; error?: string }> {
   try {
-    await callDeepSeek(apiKey, "hi", { maxTokens: 1, temperature: 0 });
+    await callDeepSeek(apiKey, "hi", {
+      maxTokens: 1,
+      temperature: 0,
+      verifyTimeout: 10000, // 验证 Key 用更短的超时，避免长时间等待
+    });
     return { valid: true };
   } catch (err: any) {
     const status = err.response?.status;

@@ -35,6 +35,7 @@ export interface HandlerResponse {
 export interface ParseRequestBody {
   fileUrl?: string;
   filename: string;
+  content?: string; // base64 编码的文件内容（本地开发降级方案）
 }
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -86,16 +87,25 @@ async function verifyKey(req: HandlerRequest): Promise<HandlerResponse> {
 
 async function parse(req: HandlerRequest): Promise<HandlerResponse> {
   return safe(async () => {
-    const { fileUrl, filename } = req.body as ParseRequestBody;
-    if (!fileUrl || !filename) {
+    const { fileUrl, filename, content } = req.body as ParseRequestBody;
+    if ((!fileUrl && !content) || !filename) {
       return json(400, { error: "请上传文件" });
     }
-    const resp = await axios.get(fileUrl, {
-      responseType: "arraybuffer",
-      timeout: 30000,
-      maxContentLength: 15 * 1024 * 1024,
-    });
-    const buffer = Buffer.from(resp.data);
+
+    let buffer: Buffer;
+    if (content) {
+      // 本地开发降级方案：前端以 base64 直接传文件内容
+      buffer = Buffer.from(content, "base64");
+    } else {
+      // 生产环境：从 CloudBase 临时下载 URL 拉取文件
+      const resp = await axios.get(fileUrl!, {
+        responseType: "arraybuffer",
+        timeout: 30000,
+        maxContentLength: 15 * 1024 * 1024,
+      });
+      buffer = Buffer.from(resp.data);
+    }
+
     const result = await parseFile({ buffer, originalname: filename });
     return json(200, result);
   });
