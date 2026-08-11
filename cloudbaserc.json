@@ -1,0 +1,42 @@
+{
+  "$schema": "https://framework.cloudbase.net/framework-schema.json",
+  "envId": "resumeai-pro-d5gql4vpq34e14857",
+  "version": "2.0",
+  "functions": [
+    {
+      "name": "resumeai-api",
+      "handler": "index.main",
+      "runtime": "Nodejs18.15",
+      "timeout": 90,
+      "memorySize": 512
+    }
+  ],
+  "framework": {
+    "name": "resumeai-pro",
+    "plugins": {
+      "frontend": {
+        "use": "@cloudbase/website",
+        "inputs": {
+          "src": "frontend/dist",
+          "cloudPath": "/",
+          "index": "index.html",
+          "error": {
+            "404": "index.html"
+          }
+        }
+      },
+      "api": {
+        "use": "@cloudbase/function",
+        "inputs": {
+          "name": "resumeai-api",
+          "source": "cloudbase/dist",
+          "handler": "index.main",
+          "runtime": "Nodejs18.15",
+          "timeout": 90,
+          "installDependency": false,
+          "memory": 512
+        }
+      }
+    }
+  }
+}
