@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useApp, extractErrorMessage } from "../data/AppContext";
 import { api } from "../data/api";
 import { Button } from "../components/Button";
@@ -6,6 +6,7 @@ import { Card } from "../components/Card";
 import { Input } from "../components/Input";
 import { Tag } from "../components/Tag";
 
+// 8 项核心优化规则展示数据（对齐 PRD 第 4 章）
 const RULES_DISPLAY = [
   { no: "01", name: "关键词匹配", desc: "提取 JD 核心关键词，确保简历命中" },
   { no: "02", name: "STAR 原则重构", desc: "情境-任务-行动-结果，结构化叙述" },
@@ -34,12 +35,13 @@ function UploadCard({
   onChange: (text: string, filename?: string) => void;
   onClear: () => void;
 }) {
+  const { state } = useApp();
   const inputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [dragging, setDragging] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
-  const [pasteHint, setPasteHint] = useState<string | null>(null);
+
+  const connected = state.userInput.connectionStatus === "connected";
 
   const handleFile = async (file: File) => {
     setParsing(true);
@@ -54,30 +56,6 @@ function UploadCard({
     }
   };
 
-  const handlePasteFromClipboard = async () => {
-    setPasteHint(null);
-    try {
-      if (navigator.clipboard && navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
-        if (text && text.trim()) {
-          onChange(text, filename ? filename : "粘贴文本.txt");
-          setPasteHint(`已粘贴 ${text.length} 字符`);
-          setTimeout(() => setPasteHint(null), 2500);
-          textareaRef.current?.focus();
-          return;
-        }
-        setPasteHint("剪贴板为空，请先复制简历内容");
-      } else {
-        setPasteHint("当前浏览器不支持自动粘贴，请点击下方文本框后按 Ctrl+V 粘贴");
-        textareaRef.current?.focus();
-      }
-    } catch {
-      setPasteHint("无法读取剪贴板，请点击下方文本框后按 Ctrl+V 粘贴");
-      textareaRef.current?.focus();
-    }
-    setTimeout(() => setPasteHint(null), 4000);
-  };
-
   const hasContent = value.trim().length > 0;
 
   return (
@@ -87,36 +65,6 @@ function UploadCard({
           {icon}
         </span>
         <h3 className="text-sm font-semibold text-ink">{title}</h3>
-      </div>
-
-      <div className="flex gap-2 mb-2">
-        <button
-          type="button"
-          onClick={handlePasteFromClipboard}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-mint text-white text-xs font-medium hover:bg-mint-dark transition-colors"
-        >
-          <span>📋</span>
-          <span>粘贴文本</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-mint-light text-ink text-xs font-medium hover:border-mint hover:text-mint transition-colors"
-        >
-          <span>📤</span>
-          <span>上传文件</span>
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT}
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
-            e.target.value = "";
-          }}
-        />
       </div>
 
       <div
@@ -131,19 +79,31 @@ function UploadCard({
           const file = e.dataTransfer.files?.[0];
           if (file) handleFile(file);
         }}
-        className={`rounded-xl border-2 border-dashed p-3 text-center transition-colors ${
+        onClick={() => inputRef.current?.click()}
+        className={`cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-colors ${
           dragging
             ? "border-mint bg-mint-light"
             : hasContent
             ? "border-mint border-solid bg-mint-light/40"
-            : "border-mint-light bg-white"
+            : "border-mint-light bg-white hover:border-mint"
         }`}
       >
+        <input
+          ref={inputRef}
+          type="file"
+          accept={ACCEPT}
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+            e.target.value = "";
+          }}
+        />
         {parsing ? (
           <p className="text-sm text-mint-dark">解析中...</p>
         ) : hasContent ? (
           <div className="flex items-center justify-between gap-2">
-            <div className="text-left min-w-0 flex-1">
+            <div className="text-left min-w-0">
               <p className="text-sm text-ink truncate">
                 {filename || "已输入内容"}
               </p>
@@ -151,10 +111,10 @@ function UploadCard({
             </div>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onClear();
                 setParseError(null);
-                setPasteHint(null);
               }}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white border border-mint-light text-ink-muted hover:text-red-500"
               aria-label="清除"
@@ -163,25 +123,31 @@ function UploadCard({
             </button>
           </div>
         ) : (
-          <p className="text-xs text-ink-muted/70">
-            也可拖拽文件到此处（支持 PDF / txt / md）
-          </p>
+          <div className="py-2">
+            <p className="text-sm text-ink-muted">
+              拖拽文件到此处，或点击上传
+            </p>
+            <p className="text-xs text-ink-muted/70 mt-1">
+              支持 PDF / txt / md
+            </p>
+          </div>
         )}
       </div>
 
       {parseError && (
         <p className="mt-1.5 text-xs text-red-500">{parseError}</p>
       )}
-      {pasteHint && (
-        <p className="mt-1.5 text-xs text-mint-dark">{pasteHint}</p>
-      )}
 
       <textarea
-        ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value, filename)}
-        placeholder="可直接在此粘贴或手动输入简历 / JD 内容（推荐：先复制原文，再点上方「粘贴文本」按钮）"
-        className="mt-2 w-full h-40 px-3 py-2 rounded-lg border border-mint-light bg-white text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:border-mint focus:ring-2 focus:ring-mint/20 resize-y"
+        disabled={!connected}
+        placeholder={
+          connected
+            ? "文件解析后内容显示于此，也可直接粘贴或手动输入..."
+            : "请先验证 API Key"
+        }
+        className="mt-2 w-full h-40 px-3 py-2 rounded-lg border border-mint-light bg-white text-sm text-ink placeholder:text-ink-muted/60 focus:outline-none focus:border-mint focus:ring-2 focus:ring-mint/20 resize-y disabled:bg-gray-50"
       />
     </div>
   );
@@ -191,20 +157,17 @@ function ApiKeySection() {
   const { state, dispatch } = useApp();
   const { apiKey, connectionStatus, connectionError } = state.userInput;
   const verifying = connectionStatus === "verifying";
-  const lastVerifiedKeyRef = useRef<string>("");
 
-  const handleVerify = async (keyToVerify?: string) => {
-    const key = (keyToVerify ?? apiKey).trim();
-    if (!key) return;
+  const handleVerify = async () => {
+    if (!apiKey.trim()) return;
     dispatch({ type: "SET_CONNECTION", status: "verifying" });
     try {
-      const result = await api.verifyKey(key);
+      const result = await api.verifyKey(apiKey.trim());
       dispatch({
         type: "SET_CONNECTION",
         status: result.valid ? "connected" : "failed",
         error: result.error,
       });
-      if (result.valid) lastVerifiedKeyRef.current = key;
     } catch (err) {
       dispatch({
         type: "SET_CONNECTION",
@@ -213,21 +176,6 @@ function ApiKeySection() {
       });
     }
   };
-
-  useEffect(() => {
-    const trimmed = apiKey.trim();
-    if (
-      trimmed.length >= 10 &&
-      trimmed.startsWith("sk-") &&
-      trimmed !== lastVerifiedKeyRef.current &&
-      connectionStatus !== "verifying"
-    ) {
-      const timer = setTimeout(() => {
-        handleVerify(trimmed);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [apiKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const statusHint = () => {
     if (verifying)
@@ -265,7 +213,7 @@ function ApiKeySection() {
         <Button
           variant="secondary"
           loading={verifying}
-          onClick={() => handleVerify()}
+          onClick={handleVerify}
           disabled={!apiKey.trim()}
           className="sm:self-start mt-0.5"
         >
@@ -390,6 +338,7 @@ export function HomePage() {
         </div>
       </Card>
 
+      {/* 8 项核心优化规则 4×2 网格 */}
       <Card className="p-5">
         <h3 className="text-base font-semibold text-ink mb-3">
           8 项核心优化规则

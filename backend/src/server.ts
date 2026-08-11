@@ -28,6 +28,8 @@ app.use(express.json({ limit: "10mb" }));
 
 // 统一委派给共享路由层
 app.all("/api/*", async (req, res) => {
+  const start = Date.now();
+  console.log(`→ ${req.method} ${req.path}`);
   const handlerReq: HandlerRequest = {
     method: req.method,
     path: req.path,
@@ -35,6 +37,8 @@ app.all("/api/*", async (req, res) => {
     query: req.query as Record<string, string>,
   };
   const resp = await handleRequest(handlerReq);
+  const ms = Date.now() - start;
+  console.log(`← ${req.method} ${req.path} ${resp.statusCode} (${ms}ms)`);
   res.status(resp.statusCode).json(resp.body);
 });
 
